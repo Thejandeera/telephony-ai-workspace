@@ -1,10 +1,10 @@
-# 📞 Telephony AI - Microservices Architecture
+# Telephony AI - Microservices Architecture
 
 A simple event-driven microservices project built with **Java Spring Boot** that simulates a backend telephony AI system. Live call events trigger automated status updates for customer support agents through REST-based communication between two independent services.
 
 ---
 
-# 🏗️ Architecture
+# Architecture
 
 The project consists of two standalone Spring Boot microservices:
 
@@ -15,7 +15,7 @@ The project consists of two standalone Spring Boot microservices:
 
 ---
 
-# 📌 System Flow
+# System Flow
 
 ```text
                     Incoming Telephony Event
@@ -41,7 +41,7 @@ The project consists of two standalone Spring Boot microservices:
 
 ---
 
-# 🛠️ Technology Stack
+# Technology Stack
 
 - Java 17
 - Spring Boot
@@ -53,7 +53,7 @@ The project consists of two standalone Spring Boot microservices:
 
 ---
 
-# 📂 Project Structure
+# Project Structure
 
 ```text
 telephony-ai/
@@ -73,7 +73,7 @@ telephony-ai/
 
 ---
 
-# 🚀 Getting Started
+# Getting Started
 
 ## Prerequisites
 
@@ -93,7 +93,7 @@ mvn -version
 
 ---
 
-# ▶ Running the Services
+# Running the Services
 
 Both microservices must run simultaneously.
 
@@ -127,7 +127,7 @@ http://localhost:8082
 
 ---
 
-# 📡 API Reference
+# API Reference
 
 ## Agent Status Service
 
@@ -189,7 +189,7 @@ Response
 
 ---
 
-# 📡 Call Event Service
+# Call Event Service
 
 Base URL
 
@@ -225,7 +225,7 @@ Event processed successfully
 
 ---
 
-# 🔄 Complete Call Lifecycle
+# Complete Call Lifecycle
 
 ## Step 1 – Verify Initial Agent Status
 
@@ -317,7 +317,7 @@ Expected Response
 
 ---
 
-# 🔄 Internal Communication
+# Internal Communication
 
 The **Call Event Service** acts as an HTTP client.
 
@@ -359,7 +359,7 @@ Status = AVAILABLE
 
 ---
 
-# 🧪 Testing with Postman
+# Testing with Postman
 
 ### STARTED Event
 
@@ -399,7 +399,7 @@ Status = AVAILABLE
 
 ---
 
-# 📖 Example Architecture Diagram
+# Example Architecture Diagram
 
 ```text
                 ┌──────────────────────────────┐
