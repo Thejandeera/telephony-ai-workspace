@@ -13,8 +13,8 @@ public class AgentService {
     private final Map<String, Agent> agentDatabase = new ConcurrentHashMap<>();
 
     public AgentService() {
-        agentDatabase.put("agent-1", new Agent("agent-1", "Alice", AgentStatus.AVAILABLE));
-        agentDatabase.put("agent-2", new Agent("agent-2", "Bob", AgentStatus.OFFLINE));
+        agentDatabase.put("agent-1", new Agent("agent-1", "Thejandeera", AgentStatus.AVAILABLE));
+        agentDatabase.put("agent-2", new Agent("agent-2", "Sandeepana", AgentStatus.OFFLINE));
     }
 
     public Optional<Agent> getAgent(String id) {
