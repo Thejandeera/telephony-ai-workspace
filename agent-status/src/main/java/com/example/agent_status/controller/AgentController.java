@@ -1,8 +1,8 @@
-package com.example.agentstatus.controller;
+package com.example.agent_status.controller;
 
-import com.example.agentstatus.model.Agent;
-import com.example.agentstatus.model.AgentStatus;
-import com.example.agentstatus.service.AgentService;
+import com.example.agent_status.model.Agent;
+import com.example.agent_status.model.AgentStatus;
+import com.example.agent_status.service.AgentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
