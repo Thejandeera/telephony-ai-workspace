@@ -1,4 +1,4 @@
-package com.example.agentstatus.model;
+package com.example.agent_status.model;
 
 public enum AgentStatus {
     AVAILABLE,

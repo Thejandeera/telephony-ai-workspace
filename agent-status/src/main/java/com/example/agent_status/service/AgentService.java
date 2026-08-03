@@ -1,7 +1,7 @@
-package com.example.agentstatus.service;
+package com.example.agent_status.service;
 
-import com.example.agentstatus.model.Agent;
-import com.example.agentstatus.model.AgentStatus;
+import com.example.agent_status.model.Agent;
+import com.example.agent_status.model.AgentStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
