@@ -1,424 +1,162 @@
-# Telephony AI - Microservices Architecture
+# Telephony AI - Event-Driven Microservices
 
-A simple event-driven microservices project built with **Java Spring Boot** that simulates a backend telephony AI system. Live call events trigger automated status updates for customer support agents through REST-based communication between two independent services.
-
----
-
-# Architecture
-
-The project consists of two standalone Spring Boot microservices:
-
-| Service | Port | Responsibility |
-|---------|------|----------------|
-| **Agent Status Service** | **8081** | Maintains agent information and their current availability. |
-| **Call Event Service** | **8082** | Receives telephony events and updates agent status through REST APIs. |
+A completely decoupled, asynchronous microservices architecture built with **Java Spring Boot 4.x** and **Apache Kafka**. It simulates a backend telephony system where live call events (e.g., `STARTED`, `ENDED`) trigger automated status updates for customer support agents without blocking HTTP requests.
 
 ---
 
-# System Flow
+## Architecture & Flow
+
+Instead of services communicating directly via REST, they are decoupled using a Publisher/Subscriber model via Kafka.
 
 ```text
-                    Incoming Telephony Event
-                              │
-                              ▼
-                 Call Event Service (8082)
-                              │
-               REST API (HTTP PUT Request)
-                              │
-                              ▼
-               Agent Status Service (8081)
-                              │
-            Updates Agent Availability State
-```
-
-### Event Processing Logic
-
-| Call Event | Agent Status |
-|------------|--------------|
-| STARTED | BUSY |
-| ANSWERED | BUSY |
-| ENDED | AVAILABLE |
-
----
-
-# Technology Stack
-
-- Java 17
-- Spring Boot
-- Spring Web
-- Maven
-- REST APIs
-- ConcurrentHashMap (In-Memory Storage)
-- Postman / cURL for Testing
-
----
-
-# Project Structure
-
-```text
-telephony-ai/
-│
-├── agent-status/
-│   ├── src/
-│   ├── pom.xml
-│   └── mvnw
-│
-├── call-event/
-│   ├── src/
-│   ├── pom.xml
-│   └── mvnw
-│
-└── README.md
+[ Postman / AI Voice Agent ]
+             │ (POST Request)
+             ▼
+[ Call Event Service (:8082) ] ──▶ (Producer) Publishes JSON to Topic
+                                          │
+                                   [ Apache Kafka ] (Topic: telephony.events)
+                                          │
+[ Agent Status Service (:8081) ] ◀── (Consumer) Reads JSON & Updates DB
 ```
 
 ---
 
-# Getting Started
+## Project Structure & File Roles
 
-## Prerequisites
+### 1. Call Event Service (Producer)
 
-Make sure you have installed:
+This service receives API requests and publishes them to the Kafka topic.
 
-- Java 17 or higher
-- Maven
-- Git
-- Postman (optional)
+- **config/KafkaProducerConfig.java**  
+  Explicitly configures the `KafkaTemplate` and sets up the modern Jackson JSON serializer to format outbound messages.
 
-Verify installation:
+- **controller/CallEventController.java**  
+  Exposes the REST endpoint (`/api/calls/events`) that accepts incoming call event requests.
+
+- **model/CallEvent.java** & **CallEventType.java**  
+  Define the data structures representing call events.
+
+- **service/CallEventProcessor.java**  
+  Contains the core business logic that publishes incoming events to the `telephony.events` Kafka topic.
+
+---
+
+### 2. Agent Status Service (Consumer)
+
+This service owns the mock database and continuously listens for Kafka events.
+
+- **config/KafkaConsumerConfig.java**  
+  Configures the Kafka listener to bypass package headers and consume raw JSON messages.
+
+- **controller/AgentController.java**  
+  Exposes a GET endpoint (`/api/agents/{id}`) for retrieving an agent's current status.
+
+- **dto/**  
+  Contains local Data Transfer Objects used by Jackson to deserialize incoming Kafka messages.
+
+- **model/**  
+  Contains entity classes representing customer support agents and their statuses (`AVAILABLE`, `BUSY`, `OFFLINE`).
+
+- **service/AgentService.java**  
+  Manages the `ConcurrentHashMap` mock database for thread-safe agent storage and retrieval.
+
+- **service/KafkaEventListener.java**  
+  Implements the `@KafkaListener` that consumes Kafka events, parses the JSON payload, and updates the agent status.
+
+---
+
+## Getting Started
+
+### 1. Start the Kafka Environment
+
+Ensure Docker is running, then start the Kafka broker and UI.
 
 ```bash
-java -version
-mvn -version
+docker-compose up -d
 ```
+
+**Kafka Broker:** `localhost:9092`
+
+**Kafka UI:** `http://localhost:8080`
 
 ---
 
-# Running the Services
+### 2. Start the Microservices
 
-Both microservices must run simultaneously.
-
-## Terminal 1 – Agent Status Service
+Run both Spring Boot applications simultaneously.
 
 ```bash
+# Terminal 1
 cd agent-status
 ./mvnw spring-boot:run
-```
 
-Runs on:
-
-```
-http://localhost:8081
-```
-
----
-
-## Terminal 2 – Call Event Service
-
-```bash
+# Terminal 2
 cd call-event
 ./mvnw spring-boot:run
 ```
 
-Runs on:
-
-```
-http://localhost:8082
-```
-
 ---
 
-# API Reference
+## Testing the Flow
 
-## Agent Status Service
-
-Base URL
-
-```
-http://localhost:8081
-```
-
-### Get Agent
-
-**Endpoint**
-
-```
-GET /api/agents/{id}
-```
-
-Example
+### 1. Check Initial Agent Status
 
 ```bash
 curl -X GET http://localhost:8081/api/agents/agent-1
 ```
 
-Response
+Response:
 
 ```json
 {
   "id": "agent-1",
-  "name": "Alice",
+  "name": "Thejandeera",
   "status": "AVAILABLE"
 }
 ```
 
 ---
 
-### Update Agent Status
-
-**Endpoint**
-
-```
-PUT /api/agents/{id}/status
-```
-
-Example
-
-```bash
-curl -X PUT http://localhost:8081/api/agents/agent-1/status \
--H "Content-Type: application/json" \
--d "{\"status\":\"BUSY\"}"
-```
-
-Response
-
-```json
-{
-  "message": "Agent status updated successfully"
-}
-```
-
----
-
-# Call Event Service
-
-Base URL
-
-```
-http://localhost:8082
-```
-
-### Receive Call Event
-
-**Endpoint**
-
-```
-POST /api/calls/events
-```
-
-Example
+### 2. Send a Call Event
 
 ```bash
 curl -X POST http://localhost:8082/api/calls/events \
 -H "Content-Type: application/json" \
--d '{
-      "callId":"call-1001",
-      "agentId":"agent-1",
-      "eventType":"STARTED"
-    }'
+-d '{"callId":"call-1001","agentId":"agent-1","eventType":"STARTED"}'
 ```
 
-Response
+Response:
 
-```
+```text
 Event processed successfully
 ```
 
 ---
 
-# Complete Call Lifecycle
+### 3. Verify the Agent Status Update
 
-## Step 1 – Verify Initial Agent Status
-
-```http
-GET http://localhost:8081/api/agents/agent-1
+```bash
+curl -X GET http://localhost:8081/api/agents/agent-1
 ```
 
-Expected Response
+Response:
 
 ```json
 {
-  "id":"agent-1",
-  "name":"Alice",
-  "status":"AVAILABLE"
+  "id": "agent-1",
+  "name": "Thejandeera",
+  "status": "BUSY"
 }
 ```
 
 ---
 
-## Step 2 – Simulate Incoming Call
+### 4. Monitor the System
 
-```http
-POST http://localhost:8082/api/calls/events
+Open the Kafka UI:
+
+```
+http://localhost:8080
 ```
 
-Request Body
-
-```json
-{
-  "callId":"1001",
-  "agentId":"agent-1",
-  "eventType":"STARTED"
-}
-```
-
----
-
-## Step 3 – Verify Agent Became Busy
-
-```http
-GET http://localhost:8081/api/agents/agent-1
-```
-
-Expected Response
-
-```json
-{
-  "id":"agent-1",
-  "name":"Alice",
-  "status":"BUSY"
-}
-```
-
----
-
-## Step 4 – Simulate Call End
-
-```http
-POST http://localhost:8082/api/calls/events
-```
-
-Request Body
-
-```json
-{
-  "callId":"1001",
-  "agentId":"agent-1",
-  "eventType":"ENDED"
-}
-```
-
----
-
-## Step 5 – Verify Agent Is Available Again
-
-```http
-GET http://localhost:8081/api/agents/agent-1
-```
-
-Expected Response
-
-```json
-{
-  "id":"agent-1",
-  "name":"Alice",
-  "status":"AVAILABLE"
-}
-```
-
----
-
-# Internal Communication
-
-The **Call Event Service** acts as an HTTP client.
-
-When a call event is received:
-
-### STARTED
-
-```text
-POST /api/calls/events
-        │
-        ▼
-PUT /api/agents/{id}/status
-Status = BUSY
-```
-
----
-
-### ANSWERED
-
-```text
-POST /api/calls/events
-        │
-        ▼
-PUT /api/agents/{id}/status
-Status = BUSY
-```
-
----
-
-### ENDED
-
-```text
-POST /api/calls/events
-        │
-        ▼
-PUT /api/agents/{id}/status
-Status = AVAILABLE
-```
-
----
-
-# Testing with Postman
-
-### STARTED Event
-
-```json
-{
-  "callId":"1001",
-  "agentId":"agent-1",
-  "eventType":"STARTED"
-}
-```
-
----
-
-### ANSWERED Event
-
-```json
-{
-  "callId":"1001",
-  "agentId":"agent-1",
-  "eventType":"ANSWERED"
-}
-```
-
----
-
-### ENDED Event
-
-```json
-{
-  "callId":"1001",
-  "agentId":"agent-1",
-  "eventType":"ENDED"
-}
-```
-
-
-
----
-
-# Example Architecture Diagram
-
-```text
-                ┌──────────────────────────────┐
-                │ Telephony System / AI Voice  │
-                └──────────────┬───────────────┘
-                               │
-                               │ POST Call Event
-                               ▼
-                ┌──────────────────────────────┐
-                │ Call Event Service (8082)    │
-                └──────────────┬───────────────┘
-                               │
-                               │ REST API
-                               ▼
-                ┌──────────────────────────────┐
-                │ Agent Status Service (8081)  │
-                └──────────────┬───────────────┘
-                               │
-                               ▼
-                    ConcurrentHashMap Storage
-```
-
+Navigate to the **telephony.events** topic to inspect the JSON messages being published and consumed in real time.
