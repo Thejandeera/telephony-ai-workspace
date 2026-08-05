@@ -2,54 +2,24 @@ package com.example.call_event.service;
 
 import com.example.call_event.model.CallEvent;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class CallEventProcessor {
 
-    private final RestTemplate restTemplate;
-
-    @Value("${services.agent-status.url}")
-    private String agentServiceUrl;
+    private final KafkaTemplate<String, CallEvent> kafkaTemplate;
+    private static final String TOPIC = "telephony.events";
 
     public boolean processEvent(CallEvent event) {
-        String targetStatus = determineTargetStatus(event);
-        if (targetStatus == null) {
-            return true;
-        }
-        return updateAgentStatus(event.getAgentId(), targetStatus);
-    }
-
-    private String determineTargetStatus(CallEvent event) {
-        return switch (event.getEventType()) {
-            case STARTED, ANSWERED -> "BUSY";
-            case ENDED -> "AVAILABLE";
-            default -> null;
-        };
-    }
-
-    private boolean updateAgentStatus(String agentId, String status) {
-        String url = agentServiceUrl + "/" + agentId + "/status";
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("status", status);
-
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody);
-
         try {
-            ResponseEntity<String> response = restTemplate.exchange(
-                    url, HttpMethod.PUT, request, String.class);
-            return response.getStatusCode().is2xxSuccessful();
+            // Send the event to Kafka. The agentId is used as the key for partitioning.
+            kafkaTemplate.send(TOPIC, event.getAgentId(), event);
+            System.out.println("Published event to Kafka: " + event.getEventType() + " for agent: " + event.getAgentId());
+            return true;
         } catch (Exception e) {
+            System.err.println("Failed to publish to Kafka: " + e.getMessage());
             return false;
         }
     }
