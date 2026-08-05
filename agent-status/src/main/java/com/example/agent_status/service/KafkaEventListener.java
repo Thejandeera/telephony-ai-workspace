@@ -2,6 +2,7 @@ package com.example.agent_status.service;
 
 import com.example.agent_status.dto.CallEvent;
 import com.example.agent_status.model.AgentStatus;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -11,18 +12,25 @@ import org.springframework.stereotype.Component;
 public class KafkaEventListener {
 
     private final AgentService agentService;
+    private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "telephony.events", groupId = "agent-status-group")
-    public void consumeCallEvent(CallEvent event) {
+    public void consumeCallEvent(String messagePayload) {
+        try {
 
-        String targetStatus = determineTargetStatus(event);
+            CallEvent event = objectMapper.readValue(messagePayload, CallEvent.class);
 
-        if (targetStatus != null) {
-            agentService.updateAgentStatus(
-                    event.getAgentId(),
-                    AgentStatus.valueOf(targetStatus)
-            );
-            System.out.println("Kafka Listener: Updated agent " + event.getAgentId() + " to " + targetStatus);
+            String targetStatus = determineTargetStatus(event);
+
+            if (targetStatus != null) {
+                agentService.updateAgentStatus(
+                        event.getAgentId(),
+                        AgentStatus.valueOf(targetStatus)
+                );
+                System.out.println("Kafka Listener: Updated agent " + event.getAgentId() + " to " + targetStatus);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse Kafka message: " + e.getMessage());
         }
     }
 

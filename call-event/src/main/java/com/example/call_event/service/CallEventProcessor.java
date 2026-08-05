@@ -10,13 +10,12 @@ import org.springframework.stereotype.Service;
 public class CallEventProcessor {
 
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<String, CallEvent> kafkaTemplate;
 
     private static final String TOPIC = "telephony.events";
 
     public boolean processEvent(CallEvent event) {
         try {
-
             kafkaTemplate.send(TOPIC, event.getAgentId(), event);
             System.out.println("Published event to Kafka: " + event.getEventType() + " for agent: " + event.getAgentId());
             return true;
