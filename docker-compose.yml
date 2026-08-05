@@ -21,9 +21,9 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     ports:
-      - "8080:8080" # The UI will run on localhost:8080
+      - "8080:8080"
     environment:
       DYNAMIC_CONFIG_ENABLED: 'true'
       KAFKA_CLUSTERS_0_NAME: telephony-cluster
-      # Uses host.docker.internal to route back out to your localhost Kafka port
+
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: host.docker.internal:9092
